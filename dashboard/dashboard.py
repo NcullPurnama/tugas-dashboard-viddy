@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load dataset
-orders_path = "../data/orders_dataset.csv"
-customers_path = "../data/customers_dataset.csv"
-order_items_path = "../data/order_items_dataset.csv"
-products_path = "../data/products_dataset.csv"
-reviews_path = "../data/order_reviews_dataset.csv"
-sellers_path = "../data/sellers_dataset.csv"
+orders_path = "data/orders_dataset.csv"
+customers_path = "data/customers_dataset.csv"
+order_items_path = "data/order_items_dataset.csv"
+products_path = "data/products_dataset.csv"
+reviews_path = "data/order_reviews_dataset.csv"
+sellers_path = "data/sellers_dataset.csv"
 
 # Fungsi untuk membaca data
 @st.cache_data
