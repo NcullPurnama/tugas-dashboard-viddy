@@ -48,4 +48,4 @@ streamlit dashboard.py
 
 Silahkan klik url di bawah
 
-[Project Data Analytics Viddy](x)
+[Project Data Analytics Viddy](https://dashboard-e-commerce-viddyvirstandi.streamlit.app/)
