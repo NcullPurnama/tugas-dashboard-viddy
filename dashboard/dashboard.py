@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load dataset
-hour_path = "hour_fix.csv"
-day_path = "day_fix.csv"
+hour_path = "dashboard/hour_fix.csv"
+day_path = "dashboard/day_fix.csv"
 
 # Fungsi untuk membaca data
 @st.cache_data
