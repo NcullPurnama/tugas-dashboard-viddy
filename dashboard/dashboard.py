@@ -30,8 +30,8 @@ st.title("Dashboard Analisis Data Bike Sharing")
 
 # Pertanyaan Bisnis 1: Bagaimana tren jumlah peminjaman sepeda dalam beberapa bulan terakhir?
 st.subheader("Tren Jumlah Peminjaman Sepeda Per Bulan")
-day_data["month"] = day_data["dteday"].dt.to_period("M")
-monthly_trend = day_data.groupby("month")["cnt"].sum().reset_index()
+filtered_day_data["month"] = filtered_day_data["dteday"].dt.to_period("M")
+monthly_trend = filtered_day_data.groupby("month")["cnt"].sum().reset_index()
 monthly_trend["month"] = monthly_trend["month"].astype(str)
 
 fig, ax = plt.subplots(figsize=(10, 5))
@@ -48,7 +48,7 @@ st.write("Tren jumlah peminjaman sepeda cenderung meningkat pada bulan-bulan ter
 
 # Pertanyaan Bisnis 2: Bagaimana perbedaan jumlah penyewaan sepeda pada hari kerja dan hari libur?
 st.subheader("Perbedaan Penyewaan Sepeda pada Hari Kerja dan Hari Libur")
-holiday_trend = day_data.groupby("workingday")["cnt"].sum().reset_index()
+holiday_trend = filtered_day_data.groupby("workingday")["cnt"].sum().reset_index()
 holiday_trend["workingday"] = holiday_trend["workingday"].map({0: "Libur", 1: "Hari Kerja"})
 
 fig, ax = plt.subplots(figsize=(8, 5))
