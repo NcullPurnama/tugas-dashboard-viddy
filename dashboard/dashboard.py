@@ -4,100 +4,98 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load dataset
-orders_path = "data/orders_dataset.csv"
-customers_path = "data/customers_dataset.csv"
-order_items_path = "data/order_items_dataset.csv"
-products_path = "data/products_dataset.csv"
-reviews_path = "data/order_reviews_dataset.csv"
-sellers_path = "data/sellers_dataset.csv"
+hour_path = "hour_fix.csv"
+day_path = "day_fix.csv"
 
 # Fungsi untuk membaca data
 @st.cache_data
 def load_data():
-    orders_df = pd.read_csv(orders_path, parse_dates=["order_purchase_timestamp", "order_delivered_customer_date"])
-    customers_df = pd.read_csv(customers_path)
-    order_items_df = pd.read_csv(order_items_path)
-    products_df = pd.read_csv(products_path)
-    reviews_df = pd.read_csv(reviews_path)
-    sellers_df = pd.read_csv(sellers_path)
-    
-    # Gabungkan data
-    orders_customers_df = orders_df.merge(customers_df, on="customer_id", how="left")
-    orders_customers_df["delivery_time"] = (orders_customers_df["order_delivered_customer_date"] - orders_customers_df["order_purchase_timestamp"]).dt.days
-    
-    order_items_products_df = order_items_df.merge(products_df, on="product_id", how="left")
-    
-    return orders_customers_df, order_items_products_df, reviews_df, sellers_df
+    hour_df = pd.read_csv(hour_path, parse_dates=["dteday"])
+    day_df = pd.read_csv(day_path, parse_dates=["dteday"])
+    return hour_df, day_df
 
-data_orders, data_order_items, data_reviews, data_sellers = load_data()
+hour_data, day_data = load_data()
 
 # Sidebar: Filter berdasarkan rentang tanggal
 st.sidebar.header("Filter Tanggal")
-start_date = st.sidebar.date_input("Mulai", data_orders["order_purchase_timestamp"].min())
-end_date = st.sidebar.date_input("Selesai", data_orders["order_purchase_timestamp"].max())
+start_date = st.sidebar.date_input("Mulai", day_data["dteday"].min())
+end_date = st.sidebar.date_input("Selesai", day_data["dteday"].max())
 
 # Filter data sesuai tanggal
-filtered_orders = data_orders[(data_orders["order_purchase_timestamp"] >= pd.to_datetime(start_date)) &
-                              (data_orders["order_purchase_timestamp"] <= pd.to_datetime(end_date))]
+filtered_day_data = day_data[(day_data["dteday"] >= pd.to_datetime(start_date)) &
+                             (day_data["dteday"] <= pd.to_datetime(end_date))]
 
 # Halaman utama
-st.title("Dashboard Analisis E-Commerce")
+st.title("Dashboard Analisis Data Bike Sharing")
 
-# 1. Tren jumlah pesanan per bulan
-st.subheader("Tren Jumlah Pesanan Per Bulan")
-orders_trend = filtered_orders.groupby(filtered_orders["order_purchase_timestamp"].dt.to_period("M")).size().reset_index(name="total_orders")
-orders_trend["order_purchase_timestamp"] = orders_trend["order_purchase_timestamp"].astype(str)
+# Pertanyaan Bisnis 1: Bagaimana tren jumlah peminjaman sepeda dalam beberapa bulan terakhir?
+st.subheader("Tren Jumlah Peminjaman Sepeda Per Bulan")
+day_data["month"] = day_data["dteday"].dt.to_period("M")
+monthly_trend = day_data.groupby("month")["cnt"].sum().reset_index()
+monthly_trend["month"] = monthly_trend["month"].astype(str)
 
 fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(orders_trend["order_purchase_timestamp"], orders_trend["total_orders"], marker="o", linestyle="-", color="b")
-ax.set_title("Tren Jumlah Pesanan Per Bulan")
+ax.plot(monthly_trend["month"], monthly_trend["cnt"], marker="o", linestyle="-", color="b")
+ax.set_title("Tren Jumlah Peminjaman Sepeda Per Bulan")
 ax.set_xlabel("Bulan")
-ax.set_ylabel("Total Pesanan")
+ax.set_ylabel("Total Peminjaman")
 ax.tick_params(axis='x', rotation=45)
 ax.grid(True)
 st.pyplot(fig)
 
-# 2. Waktu pengiriman berdasarkan kota
-st.subheader("Rata-rata Waktu Pengiriman Berdasarkan Kota")
-delivery_time_per_city = filtered_orders.groupby("customer_city")["delivery_time"].mean().reset_index()
-delivery_time_per_city = delivery_time_per_city.sort_values(by="delivery_time", ascending=False).head(20)
+st.write("### Analisis:")
+st.write("Tren jumlah peminjaman sepeda cenderung meningkat pada bulan-bulan tertentu, terutama saat cuaca lebih mendukung untuk bersepeda.")
 
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.barplot(y=delivery_time_per_city["customer_city"], x=delivery_time_per_city["delivery_time"], color="navy", ax=ax)
-ax.set_title("Top 20 Kota dengan Rata-rata Waktu Pengiriman Tertinggi")
-ax.set_xlabel("Rata-rata Waktu Pengiriman (hari)")
-ax.set_ylabel("Kota")
-ax.grid(axis="x", linestyle="--", alpha=0.7)
+# Pertanyaan Bisnis 2: Bagaimana perbedaan jumlah penyewaan sepeda pada hari kerja dan hari libur?
+st.subheader("Perbedaan Penyewaan Sepeda pada Hari Kerja dan Hari Libur")
+holiday_trend = day_data.groupby("workingday")["cnt"].sum().reset_index()
+holiday_trend["workingday"] = holiday_trend["workingday"].map({0: "Libur", 1: "Hari Kerja"})
+
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.barplot(x=holiday_trend["workingday"], y=holiday_trend["cnt"], palette=["orange", "gray"], ax=ax)
+ax.set_title("Jumlah Penyewaan Sepeda pada Hari Kerja dan Hari Libur")
+ax.set_xlabel("Jenis Hari")
+ax.set_ylabel("Total Penyewaan")
 st.pyplot(fig)
 
-# 3. Kategori produk paling banyak dibeli
-st.subheader("Kategori Produk Paling Banyak Dibeli")
-product_counts = data_order_items["product_category_name"].value_counts().head(10)
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.barplot(x=product_counts.values, y=product_counts.index, color="navy", ax=ax)
-ax.set_title("Top 10 Kategori Produk")
-ax.set_xlabel("Jumlah Pembelian")
-ax.set_ylabel("Kategori Produk")
+st.write("### Analisis:")
+st.write("Peminjaman sepeda lebih banyak terjadi pada hari libur dibandingkan hari kerja, kemungkinan besar karena lebih banyak waktu luang untuk rekreasi.")
+
+# Pertanyaan Bisnis 3: Pada musim mana peminjaman sepeda paling banyak terjadi?
+st.subheader("Peminjaman Sepeda Berdasarkan Musim")
+season_trend = day_data.groupby("season")["cnt"].sum().reset_index()
+season_trend["season"] = season_trend["season"].map({1: "Spring", 2: "Summer", 3: "Fall", 4: "Winter"})
+
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.barplot(x=season_trend["season"], y=season_trend["cnt"], palette="Blues", ax=ax)
+ax.set_title("Total Peminjaman Sepeda Berdasarkan Musim")
+ax.set_xlabel("Musim")
+ax.set_ylabel("Total Penyewaan")
 st.pyplot(fig)
 
-# 4. Distribusi rating ulasan pelanggan
-st.subheader("Distribusi Rating Ulasan")
-rating_counts = data_reviews["review_score"].value_counts().sort_index()
-fig, ax = plt.subplots(figsize=(7, 5))
-sns.barplot(x=rating_counts.index, y=rating_counts.values, color="navy", ax=ax)
-ax.set_title("Distribusi Rating Ulasan Pelanggan")
-ax.set_xlabel("Rating")
-ax.set_ylabel("Jumlah Ulasan")
+st.write("### Analisis:")
+st.write("Musim gugur dan musim panas memiliki jumlah peminjaman sepeda yang lebih tinggi, sementara musim dingin memiliki jumlah peminjaman yang lebih rendah.")
+
+# Pertanyaan Bisnis 4: Apakah suhu mempengaruhi jumlah penyewaan sepeda?
+st.subheader("Pengaruh Suhu terhadap Penyewaan Sepeda")
+
+def categorize_temp(temp):
+    if temp < 0.3:
+        return "Dingin"
+    elif temp < 0.6:
+        return "Hangat"
+    else:
+        return "Panas"
+
+day_data["temp_category"] = day_data["temp"].apply(categorize_temp)
+temp_trend = day_data.groupby("temp_category")["cnt"].sum().reset_index()
+
+fig, ax = plt.subplots(figsize=(8, 5))
+sns.barplot(x=temp_trend["temp_category"], y=temp_trend["cnt"], palette="coolwarm", ax=ax)
+ax.set_title("Total Penyewaan Sepeda Berdasarkan Suhu")
+ax.set_xlabel("Kategori Suhu")
+ax.set_ylabel("Total Penyewaan")
 st.pyplot(fig)
 
-# 5. Penjual dengan jumlah produk terbanyak
-st.subheader("Penjual dengan Produk Terbanyak")
-seller_product_counts = data_order_items.groupby("seller_id").size().reset_index(name="total_products")
-seller_product_counts = seller_product_counts.sort_values(by="total_products", ascending=False).head(10)
-
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.barplot(x=seller_product_counts["total_products"], y=seller_product_counts["seller_id"], color="navy", ax=ax)
-ax.set_title("Top 10 Penjual dengan Produk Terbanyak")
-ax.set_xlabel("Jumlah Produk")
-ax.set_ylabel("ID Penjual")
-st.pyplot(fig)
+st.write("### Analisis:")
+st.write("Peminjaman sepeda meningkat pada suhu yang lebih hangat, sementara saat suhu sangat dingin, peminjaman cenderung menurun.")
