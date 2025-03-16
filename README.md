@@ -41,7 +41,7 @@ aplikasi ini bisa di jalankan di 2 tempat, yaitu local dan online
 
 ```
 cd dashboard
-streamlit dashboard.py
+streamlit run dashboard.py
 ```
 
 2. Secara online
