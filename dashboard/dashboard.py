@@ -16,39 +16,59 @@ def load_data():
 
 hour_data, day_data = load_data()
 
+# Fungsi untuk menyaring data antara tahun 2011-2012
+def count_by_day_df(day_df):
+    day_df_count_2011 = day_df.query('dteday >= "2011-01-01" and dteday < "2012-12-31"')
+    return day_df_count_2011
+
+min_date = day_data["dteday"].min()
+max_date = day_data["dteday"].max()
+
+default_start_date = pd.to_datetime("2011-01-01")
+default_end_date = pd.to_datetime("2012-01-01")
+
 # Sidebar: Filter berdasarkan rentang tanggal
-st.sidebar.header("Filter Tanggal")
-start_date = st.sidebar.date_input("Mulai", day_data["dteday"].min())
-end_date = st.sidebar.date_input("Selesai", day_data["dteday"].max())
+with st.sidebar:
+    start_date, end_date = st.date_input(
+        label='Rentang Waktu',
+        min_value=min_date,
+        max_value=max_date,
+        value=[default_start_date, default_end_date]
+    )
 
 # Filter data sesuai tanggal
 filtered_day_data = day_data[(day_data["dteday"] >= pd.to_datetime(start_date)) &
                              (day_data["dteday"] <= pd.to_datetime(end_date))]
+filtered_hour_data = hour_data[(hour_data["dteday"] >= pd.to_datetime(start_date)) &
+                               (hour_data["dteday"] <= pd.to_datetime(end_date))]
+
+main_df = filtered_day_data.copy()
+second_df = filtered_hour_data.copy()
 
 # Halaman utama
 st.title("Dashboard Analisis Data Bike Sharing")
 
 # Pertanyaan Bisnis 1: Bagaimana tren jumlah peminjaman sepeda dalam beberapa bulan terakhir?
-st.subheader("Tren Jumlah Peminjaman Sepeda Per Bulan")
-filtered_day_data["month"] = filtered_day_data["dteday"].dt.to_period("M")
-monthly_trend = filtered_day_data.groupby("month")["cnt"].sum().reset_index()
-monthly_trend["month"] = monthly_trend["month"].astype(str)
+st.subheader("Tren Jumlah Peminjaman Sepeda dalam beberapa bulan terakhir")
+main_df["day"] = main_df["dteday"].dt.to_period("D")  # Ubah ke periode harian
+daily_trend = main_df.groupby("day")["cnt"].sum().reset_index()
+daily_trend["day"] = daily_trend["day"].astype(str)
 
 fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(monthly_trend["month"], monthly_trend["cnt"], marker="o", linestyle="-", color="b")
-ax.set_title("Tren Jumlah Peminjaman Sepeda Per Bulan")
-ax.set_xlabel("Bulan")
+ax.plot(daily_trend["day"], daily_trend["cnt"], marker="o", linestyle="-", color="b")
+ax.set_title("Tren Jumlah Peminjaman Sepeda Per Hari")
+ax.set_xlabel("Tanggal")
 ax.set_ylabel("Total Peminjaman")
 ax.tick_params(axis='x', rotation=45)
 ax.grid(True)
 st.pyplot(fig)
 
 st.write("### Analisis:")
-st.write("Tren jumlah peminjaman sepeda cenderung meningkat pada bulan-bulan tertentu, terutama saat cuaca lebih mendukung untuk bersepeda.")
+st.write("Data yang ditampilkan sesuai dengan rentang waktu yang dipilih di sidebar. Tren peminjaman sepeda dapat berbeda tergantung pada hari dan kebiasaan pengguna dalam periode tersebut.")
 
 # Pertanyaan Bisnis 2: Bagaimana perbedaan jumlah penyewaan sepeda pada hari kerja dan hari libur?
 st.subheader("Perbedaan Penyewaan Sepeda pada Hari Kerja dan Hari Libur")
-holiday_trend = filtered_day_data.groupby("workingday")["cnt"].sum().reset_index()
+holiday_trend = main_df.groupby("workingday")["cnt"].sum().reset_index()
 holiday_trend["workingday"] = holiday_trend["workingday"].map({0: "Libur", 1: "Hari Kerja"})
 
 fig, ax = plt.subplots(figsize=(8, 5))
@@ -59,43 +79,4 @@ ax.set_ylabel("Total Penyewaan")
 st.pyplot(fig)
 
 st.write("### Analisis:")
-st.write("Peminjaman sepeda lebih banyak terjadi pada hari libur dibandingkan hari kerja, kemungkinan besar karena lebih banyak waktu luang untuk rekreasi.")
-
-# Pertanyaan Bisnis 3: Pada musim mana peminjaman sepeda paling banyak terjadi?
-st.subheader("Peminjaman Sepeda Berdasarkan Musim")
-season_trend = day_data.groupby("season")["cnt"].sum().reset_index()
-season_trend["season"] = season_trend["season"].map({1: "Spring", 2: "Summer", 3: "Fall", 4: "Winter"})
-
-fig, ax = plt.subplots(figsize=(8, 5))
-sns.barplot(x=season_trend["season"], y=season_trend["cnt"], palette="Blues", ax=ax)
-ax.set_title("Total Peminjaman Sepeda Berdasarkan Musim")
-ax.set_xlabel("Musim")
-ax.set_ylabel("Total Penyewaan")
-st.pyplot(fig)
-
-st.write("### Analisis:")
-st.write("Musim gugur dan musim panas memiliki jumlah peminjaman sepeda yang lebih tinggi, sementara musim dingin memiliki jumlah peminjaman yang lebih rendah.")
-
-# Pertanyaan Bisnis 4: Apakah suhu mempengaruhi jumlah penyewaan sepeda?
-st.subheader("Pengaruh Suhu terhadap Penyewaan Sepeda")
-
-def categorize_temp(temp):
-    if temp < 0.3:
-        return "Dingin"
-    elif temp < 0.6:
-        return "Hangat"
-    else:
-        return "Panas"
-
-day_data["temp_category"] = day_data["temp"].apply(categorize_temp)
-temp_trend = day_data.groupby("temp_category")["cnt"].sum().reset_index()
-
-fig, ax = plt.subplots(figsize=(8, 5))
-sns.barplot(x=temp_trend["temp_category"], y=temp_trend["cnt"], palette="coolwarm", ax=ax)
-ax.set_title("Total Penyewaan Sepeda Berdasarkan Suhu")
-ax.set_xlabel("Kategori Suhu")
-ax.set_ylabel("Total Penyewaan")
-st.pyplot(fig)
-
-st.write("### Analisis:")
-st.write("Peminjaman sepeda meningkat pada suhu yang lebih hangat, sementara saat suhu sangat dingin, peminjaman cenderung menurun.")
+st.write("Grafik ini memperlihatkan perbedaan jumlah penyewaan sepeda berdasarkan hari kerja dan hari libur sesuai rentang waktu yang dipilih.")
