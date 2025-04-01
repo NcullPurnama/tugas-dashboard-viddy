@@ -98,4 +98,4 @@ ax.set_ylabel("Total Penyewaan")
 st.pyplot(fig)
 
 st.write("### Analisis:")
-st.write("Grafik ini memperlihatkan perbedaan jumlah penyewaan sepeda berdasarkan hari kerja dan hari libur sesuai rentang waktu yang dipilih.")
+st.write("Penyewaan sepeda lebih tinggi pada hari kerja dibandingkan hari libur.")
