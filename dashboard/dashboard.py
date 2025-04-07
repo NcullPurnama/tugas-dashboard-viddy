@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load dataset
-hour_path = "hour_fix.csv"
-day_path = "day_fix.csv"
+hour_path = pd.read_csv("hour_fix.csv")
+day_path = pd.read_csv("day_fix.csv")
 
 # Fungsi untuk membaca data
 @st.cache_data
@@ -49,41 +49,18 @@ second_df = filtered_hour_data.copy()
 st.title("Dashboard Analisis Data Bike Sharing")
 
 # Pertanyaan Bisnis 1: Pada jam berapa penyewaan sepeda mencapai puncaknya dan kapan terjadi penurunan paling signifikan pada hari kerja dan hari libur?
-st.subheader("Tren Penyewaan Sepeda Berdasarkan Jam")
+st.subheader("🚲 Pola Rata-rata Penyewaan Sepeda per Jam (Hari Kerja vs Hari Libur)")
+hourly_avg_by_daytype = filtered_hour_data.groupby(['workingday', 'hr'])['cnt'].mean().reset_index()
+hourly_avg_by_daytype['Tipe Hari'] = hourly_avg_by_daytype['workingday'].map({0: 'Hari Libur', 1: 'Hari Kerja'})
 
-# Mengelompokkan data berdasarkan jam dan hari kerja
-hourly_trend = second_df.groupby(['hr', 'workingday'])['cnt'].sum().reset_index()
+fig1, ax1 = plt.subplots(figsize=(10, 5))
+sns.lineplot(data=hourly_avg_by_daytype, x='hr', y='cnt', hue='Tipe Hari', marker='o', ax=ax1)
+ax1.set_title("Rata-rata Penyewaan Sepeda per Jam")
+ax1.set_xlabel("Jam (0-23)")
+ax1.set_ylabel("Jumlah Penyewaan")
+ax1.grid(True)
+st.pyplot(fig1)
 
-# Mengubah nilai 'workingday' menjadi label yang lebih mudah dibaca
-hourly_trend['workingday'] = hourly_trend['workingday'].map({0: "Libur", 1: "Hari Kerja"})
-
-# Membuat grafik
-fig, ax = plt.subplots(figsize=(10, 5))
-sns.lineplot(data=hourly_trend, x='hr', y='cnt', hue='workingday', marker='o', ax=ax)
-ax.set_title("Jumlah Penyewaan Sepeda Berdasarkan Jam (Hari Kerja vs Hari Libur)")
-ax.set_xlabel("Jam")
-ax.set_ylabel("Jumlah Penyewaan")
-plt.xticks(range(0, 24))  # Menampilkan jam dari 0 hingga 23
-st.pyplot(fig)
-
-# Menemukan jam puncak dan penurunan signifikan
-peak_hour_workday = hourly_trend.loc[(hourly_trend['workingday'] == "Hari Kerja") & (hourly_trend['cnt'] == hourly_trend[hourly_trend['workingday'] == "Hari Kerja"]['cnt'].max())]
-significant_drop_hour_workday = hourly_trend.loc[(hourly_trend['workingday'] == "Hari Kerja")].copy()
-significant_drop_hour_workday['drop'] = significant_drop_hour_workday['cnt'].diff()
-significant_drop_hour_workday = significant_drop_hour_workday.loc[significant_drop_hour_workday['drop'].idxmin()]
-
-peak_hour_holiday = hourly_trend.loc[(hourly_trend['workingday'] == "Libur") & (hourly_trend['cnt'] == hourly_trend[hourly_trend['workingday'] == "Libur"]['cnt'].max())]
-significant_drop_hour_holiday = hourly_trend.loc[(hourly_trend['workingday'] == "Libur")].copy()
-significant_drop_hour_holiday['drop'] = significant_drop_hour_holiday['cnt'].diff()
-significant_drop_hour_holiday = significant_drop_hour_holiday.loc[significant_drop_hour_holiday['drop'].idxmin()]
-
-total_rentals = hourly_trend['cnt'].sum()
-
-# Menampilkan analisis
-st.write("### Analisis:")
-st.write(f"Pada rentang waktu dari **{start_date}** hingga **{end_date}**, terdapat **{total_rentals}** peminjaman sepeda yang mana:")
-st.write(f"- Pada jam **{peak_hour_workday['hr'].values[0]}** adalah jam puncak peminjaman sepeda pada **hari kerja**, dan penurunannya terjadi pada jam **{significant_drop_hour_workday['hr']}**.")
-st.write(f"- Pada jam **{peak_hour_holiday['hr'].values[0]}** adalah jam puncak peminjaman sepeda pada **hari libur**, dan penurunannya terjadi pada jam **{significant_drop_hour_holiday['hr']}**.")
 
 # Pertanyaan Bisnis 2: Bagaimana perbedaan jumlah penyewaan sepeda pada hari kerja dan hari libur?
 st.subheader("Perbedaan Penyewaan Sepeda pada Hari Kerja dan Hari Libur")
