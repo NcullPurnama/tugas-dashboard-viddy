@@ -24,7 +24,7 @@ min_date = day_data["dteday"].min()
 max_date = day_data["dteday"].max()
 
 default_start_date = pd.to_datetime("2011-01-01")
-default_end_date = pd.to_datetime("2011-01-31")
+default_end_date = pd.to_datetime("2012-01-31")
 
 # Sidebar: Filter berdasarkan rentang tanggal
 with st.sidebar:
