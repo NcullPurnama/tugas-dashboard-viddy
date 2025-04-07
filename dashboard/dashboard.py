@@ -8,7 +8,6 @@ hour_path = "hour_fix.csv"
 day_path = "day_fix.csv"
 
 # Fungsi untuk membaca data
-@st.cache_data
 def load_data():
     hour_df = pd.read_csv(hour_path, parse_dates=["dteday"])
     day_df = pd.read_csv(day_path, parse_dates=["dteday"])
