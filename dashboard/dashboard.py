@@ -17,7 +17,7 @@ hour_data, day_data = load_data()
 
 # Fungsi untuk menyaring data antara tahun 2011-2012
 def count_by_day_df(day_df):
-    day_df_count_2011 = day_df.query('dteday >= "2011-01-01" and dteday < "2012-12-31"')
+    day_df_count_2011 = day_df.query('dteday >= "2011-01-01" and dteday < "2011-12-31"')
     return day_df_count_2011
 
 min_date = day_data["dteday"].min()
